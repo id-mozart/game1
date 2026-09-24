@@ -1,0 +1,12 @@
+{
+  "name": "game1",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Nebula Drift and Pool Night — two browser mini-games",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
