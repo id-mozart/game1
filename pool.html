@@ -738,7 +738,7 @@ const ui = { shots: $('#shots'), left: $('#left'), best: $('#best'), msg: $('#ms
 let state = 'idle';          // idle | charging | strike | moving | over
 let shots = 0, scratch = false, started = false;
 let charging = false, chargeT0 = 0, power = 0, strikeT = 0, cueOpacity = 1, cueBack = 0;
-const aimDir = new THREE.Vector2(1, 0);
+const aimDir = new THREE.Vector2(1, 0), shotPos = new THREE.Vector2();
 let msgTimer = 0;
 const best = +localStorage.getItem('poolnight.best') || 0;
 if (best) ui.best.textContent = `рекорд ${best}`;
@@ -767,6 +767,7 @@ function releaseCharge() {
 }
 function fire() {
   const speed = MIN_SPEED + power * (MAX_SPEED - MIN_SPEED);
+  shotPos.copy(cue.pos);
   cue.vel.copy(aimDir).multiplyScalar(speed);
   shots++; updateHud(); SFX.cue(power); power = 0; ui.power.style.transform = 'scaleX(0)';
   state = 'moving';
@@ -885,12 +886,13 @@ function updateAim() {
 }
 function updateCue(dt) {
   const show = (state === 'idle' || state === 'charging' || state === 'strike') && started;
-  cueOpacity += ((show ? 1 : 0) - cueOpacity) * Math.min(1, dt * 10);
+  cueOpacity += ((show ? 1 : 0) - cueOpacity) * Math.min(1, dt * (show ? 10 : 22));
+  const anchor = state === 'moving' || state === 'over' ? shotPos : cue.pos;   // cue stays where the shot was made
   const vis = cueOpacity > 0.02;
   cueGroup.visible = vis; aimTube.visible = ghost.visible = targetTube.visible = state === 'idle' || state === 'charging';
   guideMat.opacity = 0.55;
   // fade the cue when any part of it comes close to the camera
-  p3.set(cue.pos.x, R, cue.pos.y); q3.set(cue.pos.x - aimDir.x * (cueBack + 1.5), R + 0.1, cue.pos.y - aimDir.y * (cueBack + 1.5));
+  p3.set(anchor.x, R, anchor.y); q3.set(anchor.x - aimDir.x * (cueBack + 1.5), R + 0.1, anchor.y - aimDir.y * (cueBack + 1.5));
   r3.subVectors(q3, p3); const segT = Math.max(0, Math.min(1, s3.subVectors(camera.position, p3).dot(r3) / r3.lengthSq()));
   const cueDist = camera.position.distanceTo(p3.addScaledVector(r3, segT));
   const nearFade = Math.max(0, Math.min(1, (cueDist - 0.3) / 0.4));
@@ -901,7 +903,7 @@ function updateCue(dt) {
   if (state === 'moving') back = R + 0.002;
   cueBack += (back - cueBack) * Math.min(1, dt * (state === 'strike' ? 60 : 14));
   const theta = Math.atan2(-aimDir.y, aimDir.x);
-  cueGroup.position.set(cue.pos.x - aimDir.x * cueBack, R + 0.004, cue.pos.y - aimDir.y * cueBack);
+  cueGroup.position.set(anchor.x - aimDir.x * cueBack, R + 0.004, anchor.y - aimDir.y * cueBack);
   cueGroup.rotation.set(0, theta, 0); cueGroup.rotateZ(-0.07);
 }
 
