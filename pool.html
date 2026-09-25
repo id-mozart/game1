@@ -855,7 +855,7 @@ function anyMoving() {
 }
 
 // ---------------------------------------------------------------- aim guide
-const p3 = new THREE.Vector3(), q3 = new THREE.Vector3(), r3 = new THREE.Vector3();
+const p3 = new THREE.Vector3(), q3 = new THREE.Vector3(), r3 = new THREE.Vector3(), s3 = new THREE.Vector3();
 function updateAim() {
   aimDir.set(cue.pos.x - camera.position.x, cue.pos.y - camera.position.z);
   if (aimDir.lengthSq() < 1e-6) aimDir.set(1, 0); aimDir.normalize();
@@ -889,8 +889,11 @@ function updateCue(dt) {
   const vis = cueOpacity > 0.02;
   cueGroup.visible = vis; aimTube.visible = ghost.visible = targetTube.visible = state === 'idle' || state === 'charging';
   guideMat.opacity = 0.55;
-  const buttDist = camera.position.distanceTo(p3.set(cue.pos.x - aimDir.x * (cueBack + 1.2), R + 0.1, cue.pos.y - aimDir.y * (cueBack + 1.2)));
-  const nearFade = Math.max(0, Math.min(1, (buttDist - 0.25) / 0.35));
+  // fade the cue when any part of it comes close to the camera
+  p3.set(cue.pos.x, R, cue.pos.y); q3.set(cue.pos.x - aimDir.x * (cueBack + 1.5), R + 0.1, cue.pos.y - aimDir.y * (cueBack + 1.5));
+  r3.subVectors(q3, p3); const segT = Math.max(0, Math.min(1, s3.subVectors(camera.position, p3).dot(r3) / r3.lengthSq()));
+  const cueDist = camera.position.distanceTo(p3.addScaledVector(r3, segT));
+  const nearFade = Math.max(0, Math.min(1, (cueDist - 0.3) / 0.4));
   for (const m of cueMats) m.opacity = cueOpacity * nearFade;
   if (!vis) return;
   let back = R + 0.012 + power * 0.26;
